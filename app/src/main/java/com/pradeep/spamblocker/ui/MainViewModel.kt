@@ -52,7 +52,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun notSpam(e164: String) = io {
         repo.notSpam(e164)
-        say("Marked as not spam, added to your allowlist")
+        say("Marked as not spam")
     }
 
     fun addBlocked(input: String) = io {

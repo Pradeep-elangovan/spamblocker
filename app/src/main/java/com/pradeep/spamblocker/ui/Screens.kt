@@ -51,7 +51,9 @@ private val PAGE_PADDING = PaddingValues(16.dp)
 fun CallsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
     val calls by vm.calls.collectAsStateWithLifecycle()
     val blocked by vm.blocked.collectAsStateWithLifecycle()
+    val allowed by vm.allowed.collectAsStateWithLifecycle()
     val blockedNumbers = remember(blocked) { blocked.map { it.e164 }.toSet() }
+    val allowedNumbers = remember(allowed) { allowed.map { it.e164 }.toSet() }
 
     LazyColumn(contentPadding = PAGE_PADDING, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item { SetupCard(tick, onChanged) }
@@ -65,12 +67,12 @@ fun CallsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
                 )
             }
         }
-        items(calls, key = { it.id }) { CallRow(it, it.e164 in blockedNumbers, vm) }
+        items(calls, key = { it.id }) { CallRow(it, it.e164 in blockedNumbers, it.e164 in allowedNumbers, vm) }
     }
 }
 
 @Composable
-private fun CallRow(call: CallEntity, isBlocked: Boolean, vm: MainViewModel) {
+private fun CallRow(call: CallEntity, isBlocked: Boolean, isAllowed: Boolean, vm: MainViewModel) {
     val reasonText = when {
         call.reason == "IMPORTED" -> "From phone call log"
         else -> runCatching { Reason.valueOf(call.reason).label }.getOrDefault(call.reason)
@@ -102,11 +104,19 @@ private fun CallRow(call: CallEntity, isBlocked: Boolean, vm: MainViewModel) {
             }
             val e164 = call.e164
             if (e164 != null) {
+                // The buttons reflect the number's current state, so tapping one flips the row to the other.
                 Row {
-                    if (isBlocked || call.blocked) TextButton(onClick = { vm.notSpam(e164) }) { Text("Not spam") }
-                    if (!isBlocked) {
-                        TextButton(onClick = { vm.block(e164, false) }) { Text("Block") }
-                        TextButton(onClick = { vm.block(e164, true) }) { Text("Spam") }
+                    when {
+                        // Blocked by you: the only sensible action is to undo it.
+                        isBlocked -> TextButton(onClick = { vm.notSpam(e164) }) { Text("Not spam") }
+                        // Marked not spam / allowed: flip it back to spam.
+                        isAllowed -> TextButton(onClick = { vm.block(e164, true) }) { Text("Spam") }
+                        // Not on any list yet.
+                        else -> {
+                            if (call.blocked) TextButton(onClick = { vm.notSpam(e164) }) { Text("Not spam") }
+                            TextButton(onClick = { vm.block(e164, false) }) { Text("Block") }
+                            TextButton(onClick = { vm.block(e164, true) }) { Text("Spam") }
+                        }
                     }
                 }
             }
