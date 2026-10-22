@@ -101,6 +101,13 @@ private fun CallRow(call: CallEntity, isBlocked: Boolean, isAllowed: Boolean, vm
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (call.extras.isNotEmpty()) {
+                    Text(
+                        "Raw: ${call.extras}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             val e164 = call.e164
             if (e164 != null) {

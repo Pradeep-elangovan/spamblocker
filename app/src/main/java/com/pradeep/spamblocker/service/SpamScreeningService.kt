@@ -40,6 +40,10 @@ class SpamScreeningService : CallScreeningService() {
             val app = application as SpamApp
             val parsed = NumberParser.parse(details.handle?.schemeSpecificPart)
             val callerName = details.callerDisplayName.orEmpty()
+            val contactName = details.contactDisplayName.orEmpty()
+            // Match against every name Android gives us; the carrier's spam label may sit in either.
+            val matchName = listOf(callerName, contactName).filter { it.isNotBlank() }.distinct().joinToString(" | ")
+            val extras = describe(details)
             val verification = verificationLabel(details.callerNumberVerificationStatus)
 
             // Android gives us a few seconds; anything slower than this is treated as "allow".
@@ -50,7 +54,7 @@ class SpamScreeningService : CallScreeningService() {
                         national = parsed.national,
                         isContact = parsed.e164?.let { ContactsLookup.isContact(this@SpamScreeningService, it) } ?: false,
                         contactsAvailable = ContactsLookup.available(this@SpamScreeningService),
-                        callerName = callerName.ifEmpty { null },
+                        callerName = matchName.ifEmpty { null },
                         verificationFailed = details.callerNumberVerificationStatus == Connection.VERIFICATION_STATUS_FAILED,
                         regions = parsed.regions,
                         isMobile = parsed.isMobile,
@@ -76,8 +80,9 @@ class SpamScreeningService : CallScreeningService() {
                         reason = decision.reason.name,
                         detail = decision.detail,
                         region = parsed.regions.joinToString(", "),
-                        callerName = callerName,
+                        callerName = matchName,
                         verification = verification,
+                        extras = extras,
                         action = if (decision.blocked) decision.action.name else "",
                     ),
                 )
@@ -105,6 +110,17 @@ class SpamScreeningService : CallScreeningService() {
                 .build()
             BlockAction.SILENCE -> b.setSilenceCall(true).build()
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun describe(d: Call.Details): String {
+        val parts = mutableListOf("presentation=${d.callerDisplayNamePresentation}", "props=${d.callProperties}")
+        fun bundle(label: String, b: android.os.Bundle?) {
+            if (b != null && !b.isEmpty) parts += "$label={" + b.keySet().joinToString { k -> "$k=${b.get(k)}" } + "}"
+        }
+        bundle("extras", d.extras)
+        bundle("intentExtras", d.intentExtras)
+        return parts.joinToString(" ")
     }
 
     private fun verificationLabel(status: Int) = when (status) {

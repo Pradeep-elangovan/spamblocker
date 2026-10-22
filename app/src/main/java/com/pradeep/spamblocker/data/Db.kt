@@ -11,6 +11,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "blocked")
@@ -67,6 +69,8 @@ data class CallEntity(
     val action: String = "",
     /** "screened" or "import". */
     val source: String = "screened",
+    /** Everything else Android handed the screening service for this call (diagnostics). */
+    val extras: String = "",
 )
 
 @Dao
@@ -141,9 +145,15 @@ interface SpamDao {
     suspend fun clearCalls()
 }
 
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE calls ADD COLUMN extras TEXT NOT NULL DEFAULT ''")
+    }
+}
+
 @Database(
     entities = [BlockedEntity::class, AllowedEntity::class, PatternEntity::class, RegionEntity::class, CallEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -154,6 +164,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "spamblocker.db")
+                .addMigrations(MIGRATION_1_2)
                 .build()
                 .also { instance = it }
         }
