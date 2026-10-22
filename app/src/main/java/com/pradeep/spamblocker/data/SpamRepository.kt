@@ -80,9 +80,13 @@ class SpamRepository(
         if (blocked) dao.upsertRegion(RegionEntity(region, landline, mobile)) else dao.deleteRegion(region)
     }
 
-    suspend fun logCall(entry: CallEntity) {
-        dao.insertCall(entry)
-    }
+    /** Returns the new row id, or -1 if the entry was a duplicate. */
+    suspend fun logCall(entry: CallEntity): Long = dao.insertCall(entry)
+
+    suspend fun appendCallNote(id: Long, note: String) = dao.appendNote(id, " $note")
+
+    suspend fun markCallBlocked(id: Long, reason: String, detail: String, action: String) =
+        dao.markBlocked(id, reason, detail, action)
 
     /** Returns true when an entry for this number already exists around [timestamp]. */
     suspend fun hasCallNear(e164: String, timestamp: Long, windowMs: Long = 120_000): Boolean =
