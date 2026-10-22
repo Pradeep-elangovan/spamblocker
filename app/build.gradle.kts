@@ -13,8 +13,10 @@ android {
         applicationId = "com.pradeep.spamblocker"
         minSdk = 36 // Android 16+
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI passes its run number, so every build is a distinct, newer version.
+        val build = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+        versionCode = build
+        versionName = "0.1.$build"
     }
 
     signingConfigs {

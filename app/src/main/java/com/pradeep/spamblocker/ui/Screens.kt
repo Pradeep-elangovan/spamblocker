@@ -351,5 +351,10 @@ fun SettingsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Import rules from a file") }
         OutlinedButton(onClick = { vm.clearHistory() }, modifier = Modifier.fillMaxWidth()) { Text("Clear call history") }
+
+        val version = remember {
+            runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
+        }
+        Hint("Installed version: $version")
     }
 }
