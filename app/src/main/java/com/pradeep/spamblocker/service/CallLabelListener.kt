@@ -34,10 +34,14 @@ class CallLabelListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (sbn.packageName == packageName) return
         val n = sbn.notification ?: return
-        if (n.category != Notification.CATEGORY_CALL) return
+        // Dialers don't always tag their incoming-call notification as a call, so also accept dialer-like packages.
+        if (n.category != Notification.CATEGORY_CALL && !DIALER_LIKE.containsMatchIn(sbn.packageName)) return
         val ex = n.extras
-        val text = listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_SUB_TEXT, Notification.EXTRA_BIG_TEXT)
-            .mapNotNull { ex.getCharSequence(it)?.toString()?.trim() }
+        val text = (
+            listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_SUB_TEXT, Notification.EXTRA_BIG_TEXT)
+                .map { ex.getCharSequence(it)?.toString() } + n.tickerText?.toString()
+            )
+            .mapNotNull { it?.trim() }
             .filter { it.isNotEmpty() }
             .distinct()
             .joinToString(" | ")
@@ -90,5 +94,6 @@ class CallLabelListener : NotificationListenerService() {
 
     private companion object {
         const val TAG = "CallLabelListener"
+        val DIALER_LIKE = Regex("dialer|incall|telecom|telephony|phone|contacts", RegexOption.IGNORE_CASE)
     }
 }
