@@ -50,7 +50,15 @@ dialer does itself) was not established.
   to be blocked by the phone maker, and would not pass Play Store review. Not recommended.
 - Alternatively, hand the screening role back to the dialer and use its own spam setting.
 
-Build 0.1.7 is the last version.
+The notification reader and the network-spam toggle were removed from the app in 0.1.10 (use the git history
+before that commit to see them).
+
+### Next experiment (in progress)
+Since no external spam signal is available, the app now records how each call ended (answered / missed /
+rejected / blocked, talk time) and can export a masked, labelled CSV (first 6 digits only). The plan is to test
+whether KNN / SVM / simple models beat "block all unknown numbers", mainly by saving the occasional legitimate
+unknown caller. Labels: your Spam / Not spam taps, answered calls of 20 s or more (legit), unanswered unknown calls
+(spam by default).
 
 Personal call blocker built on Android's `CallScreeningService`.
 
@@ -58,13 +66,12 @@ Personal call blocker built on Android's `CallScreeningService`.
 1. Saved contact → allow
 2. Allowlist → allow
 3. Blocklist → block
-4. Network-flagged spam (toggle) → block
-5. Pattern rules (starts with / ends with / contains) → block
-6. Region rules (state / circle, landline and mobile separately) → block
-7. Block all unknown numbers (toggle) → block
-8. Otherwise allow
+4. Pattern rules (starts with / ends with / contains) → block
+5. Region rules (state / circle, landline and mobile separately) → block
+6. Block all unknown numbers (toggle) → block
+7. Otherwise allow
 
-Blocked calls are **rejected** by default (configurable to *silence*, also per number). The "network-flagged spam" toggle exists but could not be made to work; see Findings above.
+Blocked calls are **rejected** by default (configurable to *silence*, also per number). A "network-flagged spam" toggle and a notification reader were tried and removed in 0.1.10; see Findings above.
 Unknown callers that are let through get a heads-up notification with **Block** / **Spam** buttons;
 the Calls tab lets you flag numbers afterwards, and can import your phone's call log.
 

@@ -9,7 +9,6 @@ enum class Reason(val label: String) {
     CONTACT("Saved contact"),
     ALLOWLIST("Your allowlist"),
     BLOCKLIST("Your blocklist"),
-    NETWORK_SPAM("Flagged as spam by network"),
     PATTERN("Pattern rule"),
     REGION("Blocked region"),
     UNKNOWN("Unknown number"),
@@ -25,9 +24,6 @@ data class CallInfo(
     val isContact: Boolean,
     /** False when READ_CONTACTS is missing; contact-dependent rules are then skipped for safety. */
     val contactsAvailable: Boolean,
-    /** Caller display name supplied by the carrier/telecom stack (may carry a "Spam" label). */
-    val callerName: String?,
-    val verificationFailed: Boolean,
     /** Indian states / UTs this number belongs to (usually one). */
     val regions: Set<String>,
     /** true = mobile, false = landline, null = unknown. */
@@ -52,9 +48,6 @@ data class RuleSet(
     val blocklist: Map<String, BlockAction>,
     val patterns: List<PatternRuleData>,
     val regions: List<RegionRuleData>,
-    val blockNetworkSpam: Boolean,
-    val networkKeywords: List<String>,
-    val blockFailedVerification: Boolean,
     val blockAllUnknown: Boolean,
     val defaultAction: BlockAction,
 )

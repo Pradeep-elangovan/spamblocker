@@ -6,11 +6,10 @@ package com.pradeep.spamblocker.domain
  *  1. Saved contact            -> allow
  *  2. Allowlist                -> allow
  *  3. Blocklist                -> block
- *  4. Network-flagged spam     -> block (toggle)
- *  5. Pattern rules            -> block
- *  6. Region rules             -> block
- *  7. "Block all unknown"      -> block (toggle)
- *  8. Default                  -> allow
+ *  4. Pattern rules            -> block
+ *  5. Region rules             -> block
+ *  6. "Block all unknown"      -> block (toggle)
+ *  7. Default                  -> allow
  */
 object RuleEngine {
 
@@ -22,21 +21,6 @@ object RuleEngine {
 
         if (e164 != null) {
             rules.blocklist[e164]?.let { return block(it, Reason.BLOCKLIST) }
-        }
-
-        if (rules.blockNetworkSpam) {
-            val name = call.callerName?.lowercase()
-            if (name != null) {
-                val hit = rules.networkKeywords
-                    .map { it.trim().lowercase() }
-                    .firstOrNull { it.isNotEmpty() && name.contains(it) }
-                if (hit != null) {
-                    return block(rules.defaultAction, Reason.NETWORK_SPAM, "Caller name: ${call.callerName}")
-                }
-            }
-            if (rules.blockFailedVerification && call.verificationFailed) {
-                return block(rules.defaultAction, Reason.NETWORK_SPAM, "Caller ID verification failed")
-            }
         }
 
         // Everything below relies on knowing whether the caller is a saved contact.

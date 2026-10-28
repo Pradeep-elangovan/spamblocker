@@ -15,10 +15,6 @@ private val Context.settingsDataStore by preferencesDataStore(name = "settings")
 
 data class Settings(
     val blockAllUnknown: Boolean = false,
-    val blockNetworkSpam: Boolean = false,
-    val blockFailedVerification: Boolean = false,
-    /** Comma separated, matched case-insensitively against the caller display name. */
-    val networkKeywords: String = "spam,scam,fraud,telemarketer",
     /** Applied to every automatic block and to numbers you block from now on. */
     val action: BlockAction = BlockAction.REJECT,
 )
@@ -26,9 +22,6 @@ data class Settings(
 class SettingsStore(private val context: Context) {
     private object Keys {
         val unknown = booleanPreferencesKey("block_all_unknown")
-        val network = booleanPreferencesKey("block_network_spam")
-        val verification = booleanPreferencesKey("block_failed_verification")
-        val keywords = stringPreferencesKey("network_keywords")
         val action = stringPreferencesKey("block_action")
     }
 
@@ -40,9 +33,6 @@ class SettingsStore(private val context: Context) {
         context.settingsDataStore.edit { prefs ->
             val s = transform(prefs.toSettings())
             prefs[Keys.unknown] = s.blockAllUnknown
-            prefs[Keys.network] = s.blockNetworkSpam
-            prefs[Keys.verification] = s.blockFailedVerification
-            prefs[Keys.keywords] = s.networkKeywords
             prefs[Keys.action] = s.action.name
         }
     }
@@ -51,9 +41,6 @@ class SettingsStore(private val context: Context) {
         val d = Settings()
         return Settings(
             blockAllUnknown = this[Keys.unknown] ?: d.blockAllUnknown,
-            blockNetworkSpam = this[Keys.network] ?: d.blockNetworkSpam,
-            blockFailedVerification = this[Keys.verification] ?: d.blockFailedVerification,
-            networkKeywords = this[Keys.keywords] ?: d.networkKeywords,
             action = runCatching { BlockAction.valueOf(this[Keys.action] ?: "") }.getOrDefault(d.action),
         )
     }

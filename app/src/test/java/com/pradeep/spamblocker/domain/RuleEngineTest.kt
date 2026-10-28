@@ -12,25 +12,20 @@ class RuleEngineTest {
         national: String? = "8056123456",
         contact: Boolean = false,
         contactsAvailable: Boolean = true,
-        name: String? = null,
-        verificationFailed: Boolean = false,
         regions: Set<String> = emptySet(),
         mobile: Boolean? = true,
-    ) = CallInfo(e164, national, contact, contactsAvailable, name, verificationFailed, regions, mobile)
+    ) = CallInfo(e164, national, contact, contactsAvailable, regions, mobile)
 
     private fun rules(
         allow: Set<String> = emptySet(),
         block: Map<String, BlockAction> = emptyMap(),
         patterns: List<PatternRuleData> = emptyList(),
         regions: List<RegionRuleData> = emptyList(),
-        network: Boolean = false,
-        verification: Boolean = false,
         unknown: Boolean = false,
         action: BlockAction = BlockAction.REJECT,
     ) = RuleSet(
         allowlist = allow, blocklist = block, patterns = patterns, regions = regions,
-        blockNetworkSpam = network, networkKeywords = listOf("spam", "scam"),
-        blockFailedVerification = verification, blockAllUnknown = unknown, defaultAction = action,
+        blockAllUnknown = unknown, defaultAction = action,
     )
 
     private fun pattern(type: PatternType, p: String, enabled: Boolean = true) = PatternRuleData(1, type, p, enabled)
@@ -111,20 +106,6 @@ class RuleEngineTest {
         assertEquals(Reason.UNKNOWN, d.reason)
         assertTrue(RuleEngine.decide(call(e164 = null, national = null), rules(unknown = true)).blocked)
         assertFalse(RuleEngine.decide(call(), rules(unknown = false)).blocked)
-    }
-
-    @Test fun networkSpamByCallerName() {
-        val r = rules(network = true)
-        val d = RuleEngine.decide(call(name = "Suspected SPAM caller"), r)
-        assertTrue(d.blocked)
-        assertEquals(Reason.NETWORK_SPAM, d.reason)
-        assertFalse(RuleEngine.decide(call(name = "Pizza Place"), r).blocked)
-        assertFalse(RuleEngine.decide(call(name = "Spam"), rules(network = false)).blocked)
-    }
-
-    @Test fun failedVerificationOnlyWhenEnabled() {
-        assertTrue(RuleEngine.decide(call(verificationFailed = true), rules(network = true, verification = true)).blocked)
-        assertFalse(RuleEngine.decide(call(verificationFailed = true), rules(network = true, verification = false)).blocked)
     }
 
     @Test fun withoutContactsPermissionOnlySafeRulesApply() {

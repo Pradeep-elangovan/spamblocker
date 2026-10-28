@@ -145,12 +145,6 @@ interface SpamDao {
     @Query("SELECT COUNT(*) FROM calls WHERE e164 = :e164 AND timestamp BETWEEN :from AND :to")
     suspend fun countNear(e164: String, from: Long, to: Long): Int
 
-    @Query("UPDATE calls SET extras = extras || :note WHERE id = :id")
-    suspend fun appendNote(id: Long, note: String)
-
-    @Query("UPDATE calls SET blocked = 1, reason = :reason, detail = :detail, action = :action WHERE id = :id")
-    suspend fun markBlocked(id: Long, reason: String, detail: String, action: String)
-
     @Query("SELECT * FROM calls ORDER BY timestamp ASC")
     suspend fun allCallsAscending(): List<CallEntity>
 

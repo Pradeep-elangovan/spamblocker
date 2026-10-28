@@ -4,7 +4,6 @@ import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.telecom.Connection
 import android.util.Log
-import com.pradeep.spamblocker.LastCall
 import com.pradeep.spamblocker.SpamApp
 import com.pradeep.spamblocker.data.CallEntity
 import com.pradeep.spamblocker.data.ContactsLookup
@@ -55,8 +54,6 @@ class SpamScreeningService : CallScreeningService() {
                         national = parsed.national,
                         isContact = parsed.e164?.let { ContactsLookup.isContact(this@SpamScreeningService, it) } ?: false,
                         contactsAvailable = ContactsLookup.available(this@SpamScreeningService),
-                        callerName = matchName.ifEmpty { null },
-                        verificationFailed = details.callerNumberVerificationStatus == Connection.VERIFICATION_STATUS_FAILED,
                         regions = parsed.regions,
                         isMobile = parsed.isMobile,
                     )
@@ -72,7 +69,7 @@ class SpamScreeningService : CallScreeningService() {
 
             // Bookkeeping happens after the call has been answered, so it can't slow the decision down.
             try {
-                val rowId = app.repository.logCall(
+                app.repository.logCall(
                     CallEntity(
                         e164 = parsed.e164,
                         display = parsed.display,
@@ -88,9 +85,6 @@ class SpamScreeningService : CallScreeningService() {
                         outcome = if (decision.blocked) "blocked" else "",
                     ),
                 )
-                if (rowId > 0) {
-                    app.lastCall = LastCall(rowId, parsed.e164, System.currentTimeMillis(), decision.reason, decision.blocked)
-                }
                 decision.patternId?.let { app.repository.bumpPattern(it) }
                 if (!decision.blocked && decision.reason == Reason.DEFAULT_ALLOW && parsed.e164 != null) {
                     Notifier.showUnknownCaller(

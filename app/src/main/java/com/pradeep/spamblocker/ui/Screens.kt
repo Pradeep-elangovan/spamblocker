@@ -3,8 +3,6 @@
 package com.pradeep.spamblocker.ui
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pradeep.spamblocker.data.CallEntity
 import com.pradeep.spamblocker.data.hasPermission
@@ -322,61 +319,6 @@ fun SettingsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
             "Reject ends the call before it rings; what the caller hears (busy tone, a \"declined\" message or voicemail) is " +
                 "decided by your carrier, so test it with a friend. Silence keeps your phone quiet but the caller hears " +
                 "normal ringing. You can override this per number in Rules.",
-        )
-
-        HorizontalDivider()
-        SwitchRow(
-            "Block network-flagged spam",
-            "Blocks calls whose caller name from the carrier contains one of the keywords below.",
-            s.blockNetworkSpam,
-        ) { v -> vm.update { it.copy(blockNetworkSpam = v) } }
-        if (s.blockNetworkSpam) {
-            OutlinedTextField(
-                value = s.networkKeywords,
-                onValueChange = { v -> vm.update { it.copy(networkKeywords = v) } },
-                label = { Text("Keywords (comma separated)") },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            SwitchRow(
-                "Also block failed caller ID checks",
-                "Calls whose number failed verification (likely spoofed). Many Indian carriers don't send this yet.",
-                s.blockFailedVerification,
-            ) { v -> vm.update { it.copy(blockFailedVerification = v) } }
-        }
-        if (s.blockNetworkSpam) {
-            val listenerOn = remember(tick) {
-                NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
-            }
-            Text("Spam label from your dialer (experimental)", style = MaterialTheme.typography.titleSmall)
-            Hint(
-                "Your carrier's spam label (e.g. \"Spam Alert From Jio\") reaches your dialer but not this app. With " +
-                    "Notification access, the app reads the dialer's incoming-call notification, hangs up calls that carry " +
-                    "a spam keyword and blocks the number from then on. Saved contacts and answered calls are never touched.",
-            )
-            if (listenerOn) {
-                Text("Notification access: on", color = MaterialTheme.colorScheme.primary)
-            } else {
-                Hint(
-                    "Android may grey out Notification access for apps installed outside the Play Store. If so, open App " +
-                        "info, tap the \u22EE menu, choose \"Allow restricted settings\", then come back here.",
-                )
-                OutlinedButton(
-                    onClick = {
-                        context.startActivity(
-                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")),
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Open App info") }
-                OutlinedButton(
-                    onClick = { context.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Open Notification access") }
-            }
-        }
-        Hint(
-            "Not every carrier passes a spam label to the phone. Each call in the Calls tab shows the name and caller ID " +
-                "status your carrier actually sent, so you can see whether this works for you.",
         )
 
         HorizontalDivider()
