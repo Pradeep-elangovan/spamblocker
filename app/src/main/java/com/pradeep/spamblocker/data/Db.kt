@@ -71,6 +71,10 @@ data class CallEntity(
     val source: String = "screened",
     /** Everything else Android handed the screening service for this call (diagnostics). */
     val extras: String = "",
+    /** How the call ended: answered / missed / rejected / blocked, or empty if not known yet. */
+    val outcome: String = "",
+    /** Talk time in seconds (0 if not answered). */
+    val durationSec: Int = 0,
 )
 
 @Dao
@@ -147,6 +151,15 @@ interface SpamDao {
     @Query("UPDATE calls SET blocked = 1, reason = :reason, detail = :detail, action = :action WHERE id = :id")
     suspend fun markBlocked(id: Long, reason: String, detail: String, action: String)
 
+    @Query("SELECT * FROM calls ORDER BY timestamp ASC")
+    suspend fun allCallsAscending(): List<CallEntity>
+
+    @Query("SELECT * FROM calls WHERE e164 = :e164 AND timestamp BETWEEN :from AND :to LIMIT 1")
+    suspend fun findNear(e164: String, from: Long, to: Long): CallEntity?
+
+    @Query("UPDATE calls SET outcome = :outcome, durationSec = :durationSec WHERE id = :id")
+    suspend fun setOutcome(id: Long, outcome: String, durationSec: Int)
+
     @Query("DELETE FROM calls")
     suspend fun clearCalls()
 }
@@ -157,9 +170,16 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE calls ADD COLUMN outcome TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE calls ADD COLUMN durationSec INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 @Database(
     entities = [BlockedEntity::class, AllowedEntity::class, PatternEntity::class, RegionEntity::class, CallEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -170,7 +190,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "spamblocker.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 .also { instance = it }
         }

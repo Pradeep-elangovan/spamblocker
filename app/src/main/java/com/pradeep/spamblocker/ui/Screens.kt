@@ -104,6 +104,14 @@ private fun CallRow(call: CallEntity, isBlocked: Boolean, isAllowed: Boolean, vm
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (call.outcome.isNotEmpty()) {
+                    val talk = if (call.durationSec > 0) " · ${call.durationSec}s" else ""
+                    Text(
+                        "Outcome: ${call.outcome}$talk",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (call.extras.isNotEmpty()) {
                     Text(
                         "Raw: ${call.extras}",
@@ -273,11 +281,14 @@ fun SettingsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) {
         if (it != null) vm.export(it)
     }
+    val datasetLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) {
+        if (it != null) vm.exportDataset(it)
+    }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         if (it != null) vm.importFrom(it)
     }
     val callLogPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) vm.importCallLog() else vm.say("Call log permission was denied")
+        if (granted) vm.syncCallLog() else vm.say("Call log permission was denied")
     }
 
     Column(
@@ -372,11 +383,11 @@ fun SettingsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
         Text("History and backup", style = MaterialTheme.typography.titleMedium)
         OutlinedButton(
             onClick = {
-                if (context.hasPermission(Manifest.permission.READ_CALL_LOG)) vm.importCallLog()
+                if (context.hasPermission(Manifest.permission.READ_CALL_LOG)) vm.syncCallLog()
                 else callLogPermission.launch(Manifest.permission.READ_CALL_LOG)
             },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Import recent calls from phone log") }
+        ) { Text("Sync call log now") }
         OutlinedButton(onClick = { exportLauncher.launch("spamblocker-backup.json") }, modifier = Modifier.fillMaxWidth()) {
             Text("Export rules to a file")
         }
@@ -385,6 +396,18 @@ fun SettingsScreen(vm: MainViewModel, tick: Int, onChanged: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Import rules from a file") }
         OutlinedButton(onClick = { vm.clearHistory() }, modifier = Modifier.fillMaxWidth()) { Text("Clear call history") }
+
+        HorizontalDivider()
+        Text("Learning data", style = MaterialTheme.typography.titleMedium)
+        Hint(
+            "The app records how each call ended (answered, missed, rejected, blocked) and how long you talked. Unanswered " +
+                "unknown calls count as spam by default, so just tap Not spam on the ones that were wrong. Calls you " +
+                "answered for 20 seconds or more count as legitimate.",
+        )
+        OutlinedButton(onClick = { datasetLauncher.launch("spamblocker-dataset.csv") }, modifier = Modifier.fillMaxWidth()) {
+            Text("Export labelled history for analysis")
+        }
+        Hint("The export has no full numbers: only the first 6 digits plus region, time, call counts and outcome.")
 
         val version = remember {
             runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"

@@ -34,7 +34,10 @@ fun SpamBlockerApp(vm: MainViewModel = viewModel()) {
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { tick++ }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        tick++
+        vm.syncCallLog(silent = true)
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },

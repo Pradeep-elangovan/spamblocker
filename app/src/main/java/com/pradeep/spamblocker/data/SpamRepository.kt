@@ -92,6 +92,15 @@ class SpamRepository(
     suspend fun hasCallNear(e164: String, timestamp: Long, windowMs: Long = 120_000): Boolean =
         dao.countNear(e164, timestamp - windowMs, timestamp + windowMs) > 0
 
+    suspend fun findCallNear(e164: String, timestamp: Long, windowMs: Long = 120_000): CallEntity? =
+        dao.findNear(e164, timestamp - windowMs, timestamp + windowMs)
+
+    suspend fun setCallOutcome(id: Long, outcome: String, durationSec: Int) = dao.setOutcome(id, outcome, durationSec)
+
+    suspend fun allCallsAscending() = dao.allCallsAscending()
+    suspend fun blockedNumbers(): Set<String> = dao.blocked().map { it.e164 }.toSet()
+    suspend fun allowedNumbers(): Set<String> = dao.allowed().map { it.e164 }.toSet()
+
     suspend fun clearCalls() = dao.clearCalls()
 
     // ---- backup -----------------------------------------------------------------------------

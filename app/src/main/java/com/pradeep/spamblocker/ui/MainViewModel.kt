@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pradeep.spamblocker.SpamApp
 import com.pradeep.spamblocker.data.CallLogImporter
+import com.pradeep.spamblocker.data.DatasetExporter
 import com.pradeep.spamblocker.data.Settings
 import com.pradeep.spamblocker.domain.NumberParser
 import com.pradeep.spamblocker.domain.PatternType
@@ -91,9 +92,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun update(transform: (Settings) -> Settings) = io { repo.updateSettings(transform) }
 
-    fun importCallLog() = io {
-        val added = CallLogImporter.import(getApplication(), repo)
-        say(if (added == 0) "No new calls to import" else "Imported $added calls")
+    /** Pulls call outcomes and talk time from the phone's call log into the history. */
+    fun syncCallLog(silent: Boolean = false) = io {
+        val changed = CallLogImporter.sync(getApplication(), repo)
+        if (!silent) say(if (changed == 0) "Call log is up to date" else "Synced $changed calls")
+    }
+
+    fun exportDataset(uri: Uri) = io {
+        try {
+            val app = getApplication<Application>()
+            CallLogImporter.sync(app, repo)
+            val csv = DatasetExporter.buildCsv(app, repo)
+            app.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray()) }
+            say("Exported ${csv.lineSequence().count { it.isNotBlank() } - 1} calls")
+        } catch (e: Exception) {
+            say("Couldn't save the export")
+        }
     }
 
     fun clearHistory() = io { repo.clearCalls() }

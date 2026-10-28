@@ -44,6 +44,7 @@ val REQUIRED_PERMISSIONS = listOf(
     Manifest.permission.READ_CONTACTS,
     Manifest.permission.POST_NOTIFICATIONS,
     Manifest.permission.ANSWER_PHONE_CALLS,
+    Manifest.permission.READ_CALL_LOG,
 )
 
 fun relativeTime(timestamp: Long): String =
@@ -84,7 +85,7 @@ fun SetupCard(tick: Int, onChanged: () -> Unit) {
                 }) { Text("Set as call screening app") }
             }
             if (missing.isNotEmpty()) {
-                Text("Permissions still needed: contacts (so saved numbers are never blocked), notifications and hang-up.")
+                Text("Permissions still needed: contacts (so saved numbers are never blocked), notifications, hang-up and call log (to learn how calls ended).")
                 Button(onClick = { permissionLauncher.launch(missing.toTypedArray()) }) { Text("Grant permissions") }
             }
         }

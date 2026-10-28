@@ -85,6 +85,7 @@ class SpamScreeningService : CallScreeningService() {
                         verification = verification,
                         extras = extras,
                         action = if (decision.blocked) decision.action.name else "",
+                        outcome = if (decision.blocked) "blocked" else "",
                     ),
                 )
                 if (rowId > 0) {
